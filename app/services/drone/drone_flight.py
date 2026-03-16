@@ -9,29 +9,27 @@ class DroneFlight:
         if self.base.connect() and not self.base._is_flying:
             with self.lock:
                 try:
-                    self.base.tello.send_rc_control(0, 0, 0, 0)
+                    h = self.base.tello.get_height()
+                    b = self.base.tello.get_battery()
+                    print(f"🚁 Pre-takeoff — altura: {h}cm  batería: {b}%")
                     self.base.tello.takeoff()
                     self.base._is_flying = True
-                    print("🚀 Despegando")
                     return True
                 except Exception as e:
                     print(f"❌ Error en despegue: {e}")
-                    self.base.reset()
         return False
 
     def land(self):
         if self.base.connect() and self.base._is_flying and not self.base._is_landing:
             with self.lock:
                 try:
-                    self.base.tello.send_rc_control(0, 0, 0, 0)
                     self.base._is_landing = True
                     self.base.tello.land()
                     self.base._is_flying = False
                     self.base._is_landing = False
 
                     return True
-                except Exception as e:
-                    print(f"❌ Error al aterrizar: {e}")
+                except Exception:
                     self.base._is_landing = False
         return False
 
@@ -40,9 +38,8 @@ class DroneFlight:
             try:
                 getattr(self.base.tello, f"move_{direction}")(distance)
                 return True
-            except Exception as e:
-                print(f"❌ Error en movimiento {direction}: {e}")
-        return False
+            except Exception:
+                return False
 
     def rotate(self, direction, degrees):
         if self.base.connect():
@@ -52,20 +49,18 @@ class DroneFlight:
                 else:
                     self.base.tello.rotate_counter_clockwise(degrees)
                 return True
-            except Exception as e:
-                print(f"❌ Error en rotación: {e}")
-        return False
+            except Exception:
+                return False
 
     def rc_control(self, x=0, y=0, z=0, yaw=0):
         if not self.base._is_flying:
-            print("[RC_CONTROL] ❌ Ignorado: el dron no está volando.")
+            #print("[RC_CONTROL] ❌ Ignorado: el dron no está volando.")
             return False
 
         with self.lock:
             try:
                 self.base.tello.send_rc_control(x, y, z, yaw)
-                print(f"[RC_CONTROL] x={x}, y={y}, z={z}, yaw={yaw} | ✅ True")
+               #print(f"[RC_CONTROL] x={x}, y={y}, z={z}, yaw={yaw} | ✅ True")
                 return True
-            except Exception as e:
-                print(f"[RC_CONTROL] ❌ Error: {e}")
+            except Exception:
                 return False

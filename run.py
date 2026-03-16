@@ -3,8 +3,11 @@ from flask_cors import CORS
 from app.services.websocket_service import socketio
 from app.services.drone.drone_service import drone_service
 
+from app.routes.analysis_routes import bp_analysis
+
 app = Flask(__name__)
 CORS(app)
+app.register_blueprint(bp_analysis)
 
 socketio.init_app(app, cors_allowed_origins="*")
 
