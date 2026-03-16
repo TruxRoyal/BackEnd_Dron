@@ -10,6 +10,10 @@ class DroneService:
         self.camera = DroneCamera(self.base)
         self.stats = DroneStats(self.base)
 
+    def reset(self):
+        """Reset completo: emergency_stop ya hace _full_reset interno en base."""
+        self.camera.emergency_stop()
+
     def get_status(self):
         return {
             "connected": self.base.connected,

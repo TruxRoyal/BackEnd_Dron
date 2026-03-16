@@ -1,0 +1,17 @@
+[
+  {
+    "_id": "default_video_config",
+    "fps": "30",
+    "bitrate": "5",
+    "resolution": "720p",
+    "camera": "forward",
+    "last_updated": "2025-07-18T20:00:00"
+  },
+  {
+    "_id": "default_photo_config",
+    "resolution": "1080p",
+    "camera": "forward",
+    "last_updated": "2025-07-18T20:00:00"
+  }
+]
+
