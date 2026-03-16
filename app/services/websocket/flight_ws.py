@@ -1,8 +1,10 @@
 from flask_socketio import emit
 from app.services.drone.drone_service import drone_service
 from app.services.websocket_service import socketio
+from app.services.vgps_instance import vgps
 from .utils_ws import emit_drone_status
 import threading
+
 @socketio.on('takeoff')
 def handle_takeoff(data=None):
     def do_takeoff():
@@ -41,10 +43,10 @@ def handle_stop():
 @socketio.on('rc_control')
 def handle_rc(data):
     try:
-        x = int(data.get("x", 0))
-        y = int(data.get("y", 0))
-        z = int(data.get("z", 0))
-        yaw = int(data.get("yaw", 0))
+        x = int(data.get("x", 0))     # → derecha/izquierda
+        y = int(data.get("y", 0))     # ↑ adelante/atrás
+        z = int(data.get("z", 0))     # ↑ altura
+        yaw = int(data.get("yaw", 0)) # ↻ rotación
     except (TypeError, ValueError):
         emit("drone_response", {
             "action": "rc_control",
@@ -62,3 +64,31 @@ def handle_rc(data):
     })
 
     print(f"[RC_CONTROL] x={x}, y={y}, z={z}, yaw={yaw} | ✅ {success}")
+
+    # 🔁 Actualizar VirtualGPS solo si el control fue exitoso
+    if success:
+        if yaw:
+            vgps.rotate(yaw)
+
+        vgps.update_position(forward_cm=y, right_cm=x, up_cm=z)
+        emit("vgps_state", vgps.get_state(), broadcast=True)
+
+@socketio.on("vgps_set_origin")
+def handle_set_origin(data):
+    lat = data.get("lat")
+    lon = data.get("lon")
+    if lat is not None and lon is not None:
+        vgps.set_origin(lat, lon)
+        emit("drone_response", {
+            "action": "vgps_set_origin",
+            "status": True,
+            "lat": lat,
+            "lon": lon
+        })
+        print(f"📍 Origen de VirtualGPS actualizado a lat={lat}, lon={lon}")
+    else:
+        emit("drone_response", {
+            "action": "vgps_set_origin",
+            "status": False,
+            "error": "Faltan lat o lon"
+        })
