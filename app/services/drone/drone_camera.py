@@ -1,4 +1,5 @@
-from app.utils.media_utils import get_media_directory
+from app.utils.media_utils import get_media_directory, append_photo_to_manifest
+from pathlib import Path
 from app.services.camera_config_service import load_camera_config
 
 from djitellopy import Tello
@@ -120,20 +121,35 @@ class DroneCamera:
     # ─────────────────────────────────────────
     #  Foto
     # ─────────────────────────────────────────
-    def take_photo(self):
-        frame = self.get_frame()        # RGB
+    def take_photo(
+        self,
+        mission_dir: Path | None = None,
+        waypoint: int = 0,
+        lat: float = 0.0,
+        lng: float = 0.0,
+        altitude: float = 0.0,
+        battery: int = 0,
+    ) -> tuple[bool, str | None]:
+        frame = self.get_frame()
         if frame is None:
             print("❌ No hay frame disponible")
             return False, None
 
-        now       = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        filename  = f"mision_{now}.jpg"
-        save_path = get_media_directory() / filename
+        time_str = datetime.now().strftime("%H-%M-%S")
+        if mission_dir is not None:
+            filename = f"wp_{waypoint:02d}_{time_str}.jpg"
+            save_path = mission_dir / filename
+        else:
+            filename = f"mision_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
+            save_path = get_media_directory() / filename
 
-        # djitellopy entrega RGB — convertir a BGR antes de imwrite
         bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         cv2.imwrite(str(save_path), bgr)
         print(f"📸 Foto guardada en {save_path}")
+
+        if mission_dir is not None:
+            append_photo_to_manifest(mission_dir, filename, waypoint, lat, lng, altitude, battery)
+
         return True, str(save_path)
 
     # ─────────────────────────────────────────
