@@ -73,6 +73,13 @@ def handle_rc(data):
         vgps.update_position(forward_cm=y, right_cm=x, up_cm=z)
         emit("vgps_state", vgps.get_state(), broadcast=True)
 
+@socketio.on('calibrate')
+def handle_calibrate(data=None):
+    def do_calibrate():
+        result = drone_service.flight.calibrate()
+        socketio.emit('drone_response', {"action": "calibrate", **result})
+    threading.Thread(target=do_calibrate).start()
+
 @socketio.on("vgps_set_origin")
 def handle_set_origin(data):
     lat = data.get("lat")

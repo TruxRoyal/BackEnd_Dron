@@ -56,3 +56,8 @@ dist/
 
 # Local settings
 *.local
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example

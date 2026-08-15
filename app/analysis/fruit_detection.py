@@ -25,19 +25,19 @@ def detect_fruits(img_bgr, leaves_mask, cfg):
     # --- ROI: sólo cerca de hojas ---
     roi = None
     if leaves_mask is not None and leaves_mask.size:
-        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (21,21))
+        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (41,41))
         roi = cv2.dilate((leaves_mask>0).astype(np.uint8)*255, k, iterations=1)
     else:
         roi = np.ones((h,w), np.uint8)*255
 
     # --- rangos HSV básicos ---
-    # rojo (dos bandas)
-    red1 = _in_range_mask(img_hsv, (0,  80,  70), (10, 255, 255))
-    red2 = _in_range_mask(img_hsv, (160,80,  70), (180,255, 255))
+    # rojo/naranja-rojo: fresas maduras pueden tener H 0-20 o 155-180
+    red1 = _in_range_mask(img_hsv, (0,  50,  40), (20, 255, 255))
+    red2 = _in_range_mask(img_hsv, (155, 50, 40), (180,255, 255))
     red  = cv2.bitwise_or(red1, red2)
 
-    # verde inmaduro (ojo a no confundir con hoja; lo controlamos con ROI y validación posterior)
-    green = _in_range_mask(img_hsv, (35, 60,  60), (85, 255, 255))
+    # verde inmaduro
+    green = _in_range_mask(img_hsv, (35, 50, 40), (85, 255, 255))
 
     # eliminar zonas muy oscuras (plástico negro) o muy desaturadas (gris)
     v = img_hsv[:,:,2]
@@ -86,15 +86,20 @@ def detect_fruits(img_bgr, leaves_mask, cfg):
         # Heurística de madurez (ajustable):
         # rojo si H ~ [0..10] U [160..180] y S,V razonables
         if label == "ripe":
-            is_red_like = (s_mean > 70 and v_mean > 70 and (h_mean <= 10 or h_mean >= 160))
+            is_red_like = (s_mean > 45 and v_mean > 45 and (h_mean <= 20 or h_mean >= 155))
             if not is_red_like:
                 return
             ripe_est += 1
             ripeness = 1.0
         else:
             # verde si H ~ [35..85]
-            is_green_like = (s_mean > 60 and v_mean > 60 and 35 <= h_mean <= 85)
+            is_green_like = (s_mean > 45 and v_mean > 45 and 35 <= h_mean <= 85)
             if not is_green_like:
+                return
+            # Hojas tienen baja circularidad; frutas son más redondas
+            perimeter = cv2.arcLength(c, True)
+            circularity = (4 * np.pi * a / (perimeter * perimeter)) if perimeter > 0 else 0
+            if circularity < 0.30:  # muy irregular → probablemente hoja, no fruta
                 return
             unripe_est += 1
             ripeness = 0.0

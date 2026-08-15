@@ -88,10 +88,11 @@ def build_record(image_path: str, mission: str, quality: dict,
     det["fruit_detection"] = fruit_det_norm
     det["fruits"] = fruit_color_norm
 
-    # --- resumen robusto (prefiere el detector estadístico si tiene señal) ---
-    use_fd = (ripe_fd + unripe_fd) > 0
-    ripe_src   = ripe_fd   if use_fd else ripe_fc
-    unripe_src = unripe_fd if use_fd else unripe_fc
+    # --- resumen robusto: usa el detector que encontró más maduros ---
+    if ripe_fd >= ripe_fc:
+        ripe_src, unripe_src = ripe_fd, unripe_fd
+    else:
+        ripe_src, unripe_src = ripe_fc, unripe_fc
 
     fruit_summary = {
         "total": int(ripe_src + unripe_src),
