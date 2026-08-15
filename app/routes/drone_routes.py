@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, send_file
-from app.services.drone_service import drone_service
+from app.services.drone.drone_service import drone_service
 
 drone_bp = Blueprint('drone', __name__)
 
